@@ -5,12 +5,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Work Tracker</title>
 <link rel="manifest" href="manifest.webmanifest">
-<meta name="theme-color" content="#7c3aed">
+<meta name="theme-color" content="#dc2626">
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
 
 <style>
-:root{--bg:#fef08a;--card:#fff;--tx:#2a1248;--mut:#6b4f8f;--bd:#e0d0f5;--ac:#7c3aed;--acd:#6d28d9;--ok:#15803d;--bad:#b42318;--warn:#b45309;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);color-scheme:light}
+:root{--bg:#fef08a;--card:#fff;--tx:#3d0f0f;--mut:#8f4f4f;--bd:#f5d0d0;--ac:#dc2626;--acd:#b91c1c;--ok:#15803d;--bad:#b42318;--warn:#b45309;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);color-scheme:light}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--tx);font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;line-height:1.4}
 .wrap{max-width:980px;margin:0 auto;padding:16px}
@@ -24,7 +24,7 @@ h1:before{content:"";width:12px;height:24px;background:var(--ac);border-radius:3
 .stat b{display:block;font-size:1.3rem}.stat span{color:var(--mut);font-size:.8rem}
 form{background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:12px;display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-bottom:14px}
 label{font-size:.8rem;color:var(--mut);display:flex;flex-direction:column;gap:4px}
-input,select{font:inherit;padding:8px;border:1px solid var(--bd);border-radius:8px;background:#fbf8ff;color:var(--tx)}
+input,select{font:inherit;padding:8px;border:1px solid var(--bd);border-radius:8px;background:#fff8f8;color:var(--tx)}
 input:focus,select:focus{outline:2px solid var(--ac);border-color:var(--acd)}
 button{font:inherit;padding:8px 14px;border:0;border-radius:8px;background:var(--ac);color:#fff;font-weight:600;cursor:pointer}
 button.ghost{background:transparent;color:var(--mut);border:1px solid var(--bd);font-weight:400}
@@ -34,7 +34,7 @@ button.ghost{background:transparent;color:var(--mut);border:1px solid var(--bd);
 .tw{overflow-x:auto;background:var(--card);border:1px solid var(--bd);border-radius:10px}
 table{width:100%;border-collapse:collapse;min-width:680px}
 th,td{text-align:left;padding:9px 10px;border-bottom:1px solid var(--bd);font-size:.9rem}
-th{background:#f1e8fe;color:var(--mut);font-weight:600;font-size:.78rem}
+th{background:#fee8e8;color:var(--mut);font-weight:600;font-size:.78rem}
 tr:last-child td{border-bottom:0}
 .pill{padding:2px 9px;border-radius:99px;font-size:.78rem;border:1px solid currentColor;cursor:pointer;background:none;color:inherit;font-weight:500}
 .paid,.completed{color:var(--ok)}.unpaid{color:var(--warn)}.disqualified{color:var(--bad)}
