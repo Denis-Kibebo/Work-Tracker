@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Work Tracker</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#7c3aed">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+
+<style>
+:root{--bg:#fef08a;--card:#fff;--tx:#2a1248;--mut:#6b4f8f;--bd:#e0d0f5;--ac:#7c3aed;--acd:#6d28d9;--ok:#15803d;--bad:#b42318;--warn:#b45309;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);color-scheme:light}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;line-height:1.4}
+.wrap{max-width:980px;margin:0 auto;padding:16px}
+h1{font-size:1.4rem;margin:0 0 12px;display:flex;align-items:center;gap:8px}
+h1:before{content:"";width:12px;height:24px;background:var(--ac);border-radius:3px}
+.tabs{display:flex;gap:6px;margin-bottom:14px;border-bottom:2px solid var(--bd)}
+.tab{background:none;border:0;padding:9px 14px;font:inherit;color:var(--mut);cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-2px}
+.tab.on{color:var(--tx);font-weight:600;border-bottom-color:var(--ac)}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin-bottom:14px}
+.stat{background:var(--card);border:1px solid var(--bd);border-top:3px solid var(--ac);border-radius:10px;padding:10px}
+.stat b{display:block;font-size:1.3rem}.stat span{color:var(--mut);font-size:.8rem}
+form{background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:12px;display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-bottom:14px}
+label{font-size:.8rem;color:var(--mut);display:flex;flex-direction:column;gap:4px}
+input,select{font:inherit;padding:8px;border:1px solid var(--bd);border-radius:8px;background:#fbf8ff;color:var(--tx)}
+input:focus,select:focus{outline:2px solid var(--ac);border-color:var(--acd)}
+button{font:inherit;padding:8px 14px;border:0;border-radius:8px;background:var(--ac);color:#fff;font-weight:600;cursor:pointer}
+button.ghost{background:transparent;color:var(--mut);border:1px solid var(--bd);font-weight:400}
+.actions{display:flex;gap:8px;align-items:flex-end}
+.bar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+.bar input,.bar select{flex:1;min-width:130px}
+.tw{overflow-x:auto;background:var(--card);border:1px solid var(--bd);border-radius:10px}
+table{width:100%;border-collapse:collapse;min-width:680px}
+th,td{text-align:left;padding:9px 10px;border-bottom:1px solid var(--bd);font-size:.9rem}
+th{background:#f1e8fe;color:var(--mut);font-weight:600;font-size:.78rem}
+tr:last-child td{border-bottom:0}
+.pill{padding:2px 9px;border-radius:99px;font-size:.78rem;border:1px solid currentColor;cursor:pointer;background:none;color:inherit;font-weight:500}
+.paid,.completed{color:var(--ok)}.unpaid{color:var(--warn)}.disqualified{color:var(--bad)}
+.del{background:none;color:var(--bad);padding:2px 6px}
+.empty{padding:20px;text-align:center;color:var(--mut)}
+.sec{display:none}.sec.on{display:block}.hid{display:none!important}
+a{color:var(--acd)}
+</style>
+</head>
+<body>
+<div class="wrap">
+<h1>Work Tracker</h1>
+<div class="bar"><button type="button" id="bexp">Save backup</button><button type="button" id="bcsv" class="ghost">Export work (CSV)</button><label style="flex-direction:row;align-items:center;padding:8px 14px;border:1px solid var(--bd);border-radius:8px;cursor:pointer;background:var(--card);color:var(--mut)">Restore backup<input id="bimp" type="file" accept=".json,application/json" hidden></label><span id="msg" style="color:var(--mut);font-size:.85rem;align-self:center"></span></div>
+<div class="tabs"><button class="tab on" data-s="work">Work</button><button class="tab" data-s="sched">Schedules</button><button class="tab" data-s="wk">Workers</button></div>
+
+<div class="sec on" id="work">
+<div class="stats" id="stats"></div>
+<form id="f">
+<label>Researcher name<input id="name" required></label>
+<label>Date<input id="date" type="date" required></label>
+<label>Schedule page(s)<input id="pages" placeholder="e.g. 12 or 12-15"></label>
+<label>Done by<select id="by"></select></label>
+<label>Status<select id="status"><option>Completed</option><option>Disqualified</option></select></label>
+<label>Payment<select id="pay"><option>Not paid</option><option>Paid</option></select></label>
+<label>Amount (USD)<input id="amt" type="number" min="0" step="any" placeholder="0"></label>
+<label id="wpl" class="hid">Worker pay (USD)<input id="wpay" type="number" min="0" step="any" placeholder="0"></label>
+<div class="actions"><button type="submit" id="save">Add work</button><button type="button" class="ghost" id="cancel" hidden>Cancel</button></div>
+</form>
+<div class="bar"><input id="q" placeholder="Search researcher..."><select id="fs"><option value="">All status</option><option>Completed</option><option>Disqualified</option></select><select id="fp"><option value="">All payments</option><option>Paid</option><option>Not paid</option></select></div>
+<div class="tw"><table><thead><tr><th>No.</th><th>Researcher</th><th>Date</th><th>Pages</th><th>Done by</th><th>Amount (USD)</th><th>Worker pay (USD)</th><th>Status</th><th>Payment</th><th></th></tr></thead><tbody id="rows"></tbody></table></div>
+</div>
+
+<div class="sec" id="sched">
+<form id="sf">
+<label>Work<input id="sw" required placeholder="e.g. Survey data entry"></label>
+<label>Researcher<input id="sr" required></label>
+<label>Date<input id="sd" type="date" required></label>
+<label>Time<input id="st" type="time" required></label>
+<label>Amount (USD)<input id="sa" type="number" min="0" step="any" placeholder="0"></label>
+<div class="actions"><button type="submit">Add schedule</button></div>
+</form>
+<div class="tw"><table><thead><tr><th>No.</th><th>Work</th><th>Researcher</th><th>Date</th><th>Time</th><th>Amount (USD)</th><th></th></tr></thead><tbody id="srows"></tbody></table></div>
+</div>
+
+<div class="sec" id="wk">
+<p style="color:var(--mut);margin-top:0">People who can do the work for you. They appear in the "Done by" list.</p>
+<form id="wf">
+<label>Worker name<input id="wn" required></label>
+<label>Phone number<input id="wp" type="tel" required></label>
+<div class="actions"><button type="submit">Add worker</button></div>
+</form>
+<div class="tw"><table><thead><tr><th>Name</th><th>Phone</th><th>Total to pay (USD)</th><th></th></tr></thead><tbody id="wrows"></tbody></table></div>
+<div id="wdet"></div>
+</div>
+</div>
+<script>
+var K={w:'wt-work-v2',s:'wt-sched-v2',k:'wt-workers-v2'},work=[],sched=[],wk=[],editId=null;
+function load(k){try{return JSON.parse(localStorage.getItem(k)||'[]')}catch(e){return[]}}
+function put(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
+work=load(K.w);sched=load(K.s);wk=load(K.k);
+if(!work.length){try{var old=JSON.parse(localStorage.getItem('work-tracker-v1')||'[]');if(old.length){work=old;put(K.w,work)}}catch(e){}}
+var $=function(i){return document.getElementById(i)};
+var today=function(){return new Date().toISOString().slice(0,10)};
+$('date').value=today();$('sd').value=today();
+function esc(s){return String(s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
+function tabs(){[].forEach.call(document.querySelectorAll('.tab'),function(b){b.onclick=function(){[].forEach.call(document.querySelectorAll('.tab'),function(x){x.classList.remove('on')});[].forEach.call(document.querySelectorAll('.sec'),function(x){x.classList.remove('on')});b.classList.add('on');$(b.getAttribute('data-s')).classList.add('on')}})}
+tabs();
+function workerOpts(){var cur=$('by').value;$('by').innerHTML='<option value="Me">Me</option>'+wk.map(function(w){return '<option value="'+esc(w.name)+'">'+esc(w.name)+'</option>'}).join('');$('by').value=cur||'Me';if(!$('by').value)$('by').value='Me';togg()}
+function togg(){$('wpl').classList.toggle('hid',$('by').value==='Me')}
+function fixNo(a,rev){var m=a.reduce(function(x,r){return Math.max(x,r.no||0)},0),ch=false;(rev?a.slice().reverse():a).forEach(function(r){if(!r.no){r.no=++m;ch=true}});return ch}
+function render(){
+ if(fixNo(work,true))put(K.w,work);if(fixNo(sched,false))put(K.s,sched);
+ var q=$('q').value.toLowerCase(),fs=$('fs').value,fp=$('fp').value;
+ var list=work.filter(function(r){return r.name.toLowerCase().indexOf(q)>-1&&(!fs||r.status===fs)&&(!fp||r.pay===fp)});
+ $('rows').innerHTML=list.length?list.map(function(r,i){return '<tr><td><b>'+r.no+'</b></td><td>'+esc(r.name)+'</td><td>'+esc(r.date)+'</td><td>'+esc(r.pages||'-')+'</td><td>'+esc(r.by||'Me')+'</td><td>'+(r.amount?'$'+esc(r.amount):'-')+'</td><td>'+(r.by&&r.by!=='Me'&&r.wpay?'$'+esc(r.wpay):'-')+'</td><td><span class="'+r.status.toLowerCase()+'">'+r.status+'</span></td><td><button class="pill '+(r.pay==='Paid'?'paid':'unpaid')+'" data-t="'+r.id+'" title="Tap to toggle">'+r.pay+'</button></td><td style="white-space:nowrap"><button class="pill" data-e="'+r.id+'">Edit</button> <button class="del" data-d="'+r.id+'">✕</button></td></tr>'}).join(''):'<tr><td colspan="10" class="empty">No work recorded yet.</td></tr>';
+ var c=function(f){return work.filter(f).length};var sm=function(f){return work.filter(f).reduce(function(n,r){return n+(+r.amount||0)},0)};
+ $('stats').innerHTML=[['Total',work.length],['Completed',c(function(r){return r.status==='Completed'})],['Disqualified',c(function(r){return r.status==='Disqualified'})],['Paid',c(function(r){return r.pay==='Paid'})],['Awaiting payment',c(function(r){return r.pay!=='Paid'&&r.status==='Completed'})],['Amount paid (USD)',sm(function(r){return r.pay==='Paid'})],['Amount unpaid (USD)',sm(function(r){return r.pay!=='Paid'&&r.status==='Completed'})],['To pay workers (USD)',work.reduce(function(n,r){return n+(r.by&&r.by!=='Me'?(+r.wpay||0):0)},0)]].map(function(s){return '<div class="stat"><b>'+s[1]+'</b><span>'+s[0]+'</span></div>'}).join('');
+ var ss=sched.slice().sort(function(a,b){return (a.date+a.time)<(b.date+b.time)?-1:1});
+ var tot=ss.reduce(function(n,s){return n+(+s.amount||0)},0);
+ $('srows').innerHTML=ss.length?ss.map(function(s){return '<tr><td><b>'+s.no+'</b></td><td>'+esc(s.work)+'</td><td>'+esc(s.researcher)+'</td><td>'+esc(s.date)+'</td><td>'+esc(s.time)+'</td><td>'+(s.amount!==''?'$'+esc(s.amount):'-')+'</td><td><button class="del" data-sd="'+s.id+'">✕</button></td></tr>'}).join('')+'<tr><td colspan="5"><b>Total</b></td><td colspan="2"><b>$'+tot+'</b></td></tr>':'<tr><td colspan="7" class="empty">No schedules yet.</td></tr>';
+ $('wrows').innerHTML=wk.length?wk.map(function(w){return '<tr><td>'+esc(w.name)+'</td><td><a href="tel:'+esc(w.phone)+'">'+esc(w.phone)+'</a></td><td>$'+work.reduce(function(n,r){return n+(r.by===w.name?(+r.wpay||0):0)},0)+'</td><td><button class="del" data-wd="'+w.id+'">✕</button></td></tr>'}).join(''):'<tr><td colspan="4" class="empty">No workers added yet.</td></tr>';
+ workerOpts();renderWD();
+}
+$('f').onsubmit=function(e){e.preventDefault();var o={name:$('name').value.trim(),date:$('date').value,pages:$('pages').value.trim(),by:$('by').value,status:$('status').value,pay:$('pay').value,amount:$('amt').value,wpay:$('by').value==='Me'?'':$('wpay').value};
+ if(editId){work=work.map(function(r){return r.id===editId?Object.assign({id:editId,no:r.no},o):r})}else{o.id=Date.now()+Math.random();o.no=work.reduce(function(m,r){return Math.max(m,r.no||0)},0)+1;work.unshift(o)}
+ put(K.w,work);resetForm();render()};
+function resetForm(){editId=null;$('f').reset();$('date').value=today();$('by').value='Me';togg();$('save').textContent='Add work';$('cancel').hidden=true}
+$('cancel').onclick=resetForm;
+$('rows').onclick=function(e){var t=e.target,id;
+ if(id=t.getAttribute('data-t')){work=work.map(function(r){if(String(r.id)===id)r.pay=r.pay==='Paid'?'Not paid':'Paid';return r});put(K.w,work);render()}
+ else if(id=t.getAttribute('data-d')){if(confirm('Delete this record?')){work=work.filter(function(r){return String(r.id)!==id});put(K.w,work);render()}}
+ else if(id=t.getAttribute('data-e')){var r=work.filter(function(x){return String(x.id)===id})[0];editId=r.id;$('name').value=r.name;$('date').value=r.date;$('pages').value=r.pages;$('by').value=r.by||'Me';togg();$('wpay').value=r.wpay||'';$('status').value=r.status;$('pay').value=r.pay;$('amt').value=r.amount||'';$('save').textContent='Update';$('cancel').hidden=false;window.scrollTo(0,0)}};
+$('sf').onsubmit=function(e){e.preventDefault();sched.push({id:Date.now()+Math.random(),no:sched.reduce(function(m,r){return Math.max(m,r.no||0)},0)+1,work:$('sw').value.trim(),researcher:$('sr').value.trim(),date:$('sd').value,time:$('st').value,amount:$('sa').value});put(K.s,sched);$('sf').reset();$('sd').value=today();render()};
+$('srows').onclick=function(e){var id=e.target.getAttribute('data-sd');if(id&&confirm('Delete this schedule?')){sched=sched.filter(function(s){return String(s.id)!==id});put(K.s,sched);render()}};
+$('wf').onsubmit=function(e){e.preventDefault();wk.push({id:Date.now()+Math.random(),name:$('wn').value.trim(),phone:$('wp').value.trim()});put(K.k,wk);$('wf').reset();render()};
+$('wrows').onclick=function(e){var id=e.target.getAttribute('data-wd');if(id&&confirm('Remove this worker?')){wk=wk.filter(function(w){return String(w.id)!==id});put(K.k,wk);render()}};
+function say(t){$('msg').textContent=t;setTimeout(function(){$('msg').textContent=''},4000)}
+function blobSave(name,data){var a=document.createElement('a');a.href=URL.createObjectURL(new Blob([data]));a.download=name;document.body.appendChild(a);a.click();setTimeout(function(){a.remove()},500);say('Saved to your downloads.')}
+function dl(name,data){
+ if(!window.claude||!claude.use){blobSave(name,data);return}
+ claude.use('downloads').then(function(d){
+  if(!d){blobSave(name,data);return}
+  return d.save({filename:name,data:data}).then(function(){say('Saved.')}).catch(function(e){if(!e||e.code!=='declined')say('Could not save the file.')});
+ }).catch(function(){blobSave(name,data)});
+}
+$('bexp').onclick=function(){dl('work-tracker-backup-'+today()+'.json',JSON.stringify({work:work,schedules:sched,workers:wk},null,1))};
+$('bcsv').onclick=function(){
+ var q=function(v){return '"'+String(v==null?'':v).replace(/"/g,'""')+'"'};
+ var rows=work.slice().sort(function(a,b){return (a.no||0)-(b.no||0)});
+ var out=['No,Researcher,Date,Pages,Done by,Amount (USD),Worker pay (USD),Status,Payment'].concat(rows.map(function(r){return [r.no,r.name,r.date,r.pages,r.by||'Me',r.amount,r.wpay,r.status,r.pay].map(q).join(',')}));
+ dl('work-log-'+today()+'.csv','\ufeff'+out.join('\r\n'));
+};
+$('bimp').onchange=function(){
+ var f=this.files[0];if(!f)return;var rd=new FileReader();
+ rd.onload=function(){try{var o=JSON.parse(rd.result);if(!Array.isArray(o.work))throw 0;
+  if(!confirm('Replace your current records with this backup?'))return;
+  work=o.work;sched=Array.isArray(o.schedules)?o.schedules:[];wk=Array.isArray(o.workers)?o.workers:[];
+  put(K.w,work);put(K.s,sched);put(K.k,wk);render();say('Backup restored.')}catch(e){say('That file is not a valid backup.')}};
+ rd.readAsText(f);this.value='';
+};
+function renderWD(){
+ $('wdet').innerHTML=wk.length?'<h3 style="margin:18px 0 0;font-size:1rem">Work given to each worker</h3>'+wk.map(function(w){
+  var L=work.filter(function(r){return r.by===w.name}).sort(function(a,b){return a.date<b.date?1:-1});
+  var tot=L.reduce(function(n,r){return n+(+r.wpay||0)},0);
+  return '<div class="tw" style="margin-top:10px"><div style="padding:10px;font-weight:600;border-bottom:1px solid var(--bd);display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap"><span>'+esc(w.name)+' &middot; '+esc(w.phone)+'</span><span>To receive: $'+tot+'</span></div>'+
+  (L.length?'<table style="min-width:420px"><thead><tr><th>Date</th><th>Researcher</th><th>Amount to receive (USD)</th></tr></thead><tbody>'+L.map(function(r){return '<tr><td>'+esc(r.date)+'</td><td>'+esc(r.name)+'</td><td>'+(r.wpay?'$'+esc(r.wpay):'-')+'</td></tr>'}).join('')+'</tbody></table>':'<div class="empty">No work given to this worker yet.</div>')+'</div>'}).join(''):'';
+}
+$('by').onchange=togg;
+['q','fs','fp'].forEach(function(i){$(i).oninput=render});
+render();
+if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('sw.js').catch(function(){})})}
+</script>
+</body>
+</html>
