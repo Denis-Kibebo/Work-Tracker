@@ -59,7 +59,7 @@ a{color:var(--acd)}
 </style>
 </head>
 <body>
-<div class="wrap">
+<div class="wrap" id="ow">
 <div class="top">
  <div><h1>Work Tracker<small>Research work, schedules, workers and payments</small></h1></div>
  <div class="tools"><button type="button" id="bexp">Save backup</button><button type="button" id="bcsv">Export work (CSV)</button><label>Restore backup<input id="bimp" type="file" accept=".json,application/json" hidden></label><span id="msg"></span></div>
@@ -73,6 +73,7 @@ a{color:var(--acd)}
   <div class="grid">
    <label class="f">Researcher name<input id="name" required></label>
    <label class="f">Research title<input id="rt" placeholder="Title of the research"></label>
+   <label class="f">Research email<input id="re" type="email" placeholder="researcher@email.com"></label>
    <label class="f">Date<input id="date" type="date" required></label>
    <label class="f">Done by<select id="by"></select></label>
    <label class="f">Amount (USD)<input id="amt" type="number" min="0" step="any" placeholder="0"></label>
@@ -85,7 +86,7 @@ a{color:var(--acd)}
  <div class="card">
   <h2>Work records</h2>
   <div class="filters"><input id="q" placeholder="Search researcher or title..."><select id="fs"><option value="">All status</option><option>Completed</option><option>Disqualified</option></select><select id="fp"><option value="">All payments</option><option>Paid</option><option>Not paid</option></select></div>
-  <div class="tw"><table><thead><tr><th>No.</th><th>Researcher</th><th>Research title</th><th>Date</th><th>Done by</th><th>Amount (USD)</th><th>Worker pay (USD)</th><th>Status</th><th class="c">Paid</th><th></th></tr></thead><tbody id="rows"></tbody></table></div>
+  <div class="tw"><table><thead><tr><th>No.</th><th>Researcher</th><th>Research title</th><th>Research email</th><th>Date</th><th>Done by</th><th>Amount (USD)</th><th>Worker pay (USD)</th><th>Status</th><th class="c">Paid</th><th></th></tr></thead><tbody id="rows"></tbody></table></div>
  </div>
 </div>
 
@@ -116,11 +117,13 @@ a{color:var(--acd)}
   <div class="formbar"><button type="submit" class="p">Add worker</button></div>
  </form>
  <div class="card"><h2>Workers</h2>
-  <div class="tw"><table style="min-width:480px"><thead><tr><th>Name</th><th>Phone</th><th>Total to pay (USD)</th><th></th></tr></thead><tbody id="wrows"></tbody></table></div>
+  <div class="tw"><table style="min-width:480px"><thead><tr><th>Name</th><th>Phone</th><th>Total (USD)</th><th>Paid (USD)</th><th>Balance (USD)</th><th></th></tr></thead><tbody id="wrows"></tbody></table></div>
  </div>
+ <form class="card" id="cf"><h2>Worker confirmation</h2><div class="grid"><label class="f">Paste the message or code the worker sent<input id="cc" placeholder="Paste here"></label></div><div class="formbar"><button type="submit" class="p">Apply confirmation</button></div></form>
  <div id="wdet"></div>
 </div>
 </div>
+<div class="wrap hid" id="wm"></div>
 <script>
 var K={w:'wt-work-v2',s:'wt-sched-v2',k:'wt-workers-v2'};
 function load(k){try{return JSON.parse(localStorage.getItem(k)||'[]')}catch(e){return[]}}
@@ -146,26 +149,26 @@ function render(){
  if(fixNo(work,true))put(K.w,work);if(fixNo(sched,false))put(K.s,sched);
  var q=$('q').value.toLowerCase(),fs=$('fs').value,fp=$('fp').value;
  var list=work.filter(function(r){return (r.name.toLowerCase().indexOf(q)>-1||String(r.title||'').toLowerCase().indexOf(q)>-1)&&(!fs||r.status===fs)&&(!fp||r.pay===fp)}).sort(byNo);
- $('rows').innerHTML=list.length?list.map(function(r){var w=r.by&&r.by!=='Me';return '<tr><td><b>'+r.no+'</b></td><td>'+esc(r.name)+'</td><td>'+esc(r.title||'-')+'</td><td>'+esc(r.date)+'</td><td>'+esc(r.by||'Me')+'</td><td>'+(r.amount?'$'+esc(r.amount):'-')+'</td><td>'+(w&&r.wpay?'$'+esc(r.wpay):'-')+'</td><td><span class="badge '+r.status.toLowerCase()+'">'+r.status+'</span></td><td class="c"><label class="tick" style="justify-content:center;flex-direction:column;gap:2px"><input type="checkbox" data-t="'+r.id+'"'+(r.pay==='Paid'?' checked':'')+'><span>'+(r.pay==='Paid'?'Paid':'Not paid')+'</span></label></td><td class="nw"><button class="sm" data-e="'+r.id+'">Edit</button> <button class="del" data-d="'+r.id+'" title="Delete">✕</button></td></tr>'}).join(''):'<tr><td colspan="10" class="empty">No work recorded yet.</td></tr>';
+ $('rows').innerHTML=list.length?list.map(function(r){var w=r.by&&r.by!=='Me';return '<tr><td><b>'+r.no+'</b></td><td>'+esc(r.name)+'</td><td>'+esc(r.title||'-')+'</td><td>'+(r.email?'<a href="mailto:'+esc(r.email)+'">'+esc(r.email)+'</a>':'-')+'</td><td>'+esc(r.date)+'</td><td>'+esc(r.by||'Me')+'</td><td>'+(r.amount?'$'+esc(r.amount):'-')+'</td><td>'+(w&&r.wpay?'$'+esc(r.wpay):'-')+'</td><td><span class="badge '+r.status.toLowerCase()+'">'+r.status+'</span></td><td class="c"><label class="tick" style="justify-content:center;flex-direction:column;gap:2px"><input type="checkbox" data-t="'+r.id+'"'+(r.pay==='Paid'?' checked':'')+'><span>'+(r.pay==='Paid'?'Paid':'Not paid')+'</span></label></td><td class="nw"><button class="sm" data-e="'+r.id+'">Edit</button> <button class="del" data-d="'+r.id+'" title="Delete">✕</button></td></tr>'}).join(''):'<tr><td colspan="11" class="empty">No work recorded yet.</td></tr>';
  var c=function(f){return work.filter(f).length};
  var sm=function(f){return work.filter(f).reduce(function(n,r){return n+(+r.amount||0)},0)};
- $('stats').innerHTML=[['Total records',work.length],['Completed',c(function(r){return r.status==='Completed'})],['Disqualified',c(function(r){return r.status==='Disqualified'})],['Paid',c(function(r){return r.pay==='Paid'})],['Awaiting payment',c(function(r){return r.pay!=='Paid'&&r.status==='Completed'})],['Amount paid (USD)',sm(function(r){return r.pay==='Paid'})],['Amount unpaid (USD)',sm(function(r){return r.pay!=='Paid'&&r.status==='Completed'})],['To pay workers (USD)',work.reduce(function(n,r){return n+(r.by&&r.by!=='Me'?(+r.wpay||0):0)},0)]].map(function(s){return '<div class="stat"><b>'+s[1]+'</b><span>'+s[0]+'</span></div>'}).join('');
+ $('stats').innerHTML=[['Total records',work.length],['Completed',c(function(r){return r.status==='Completed'})],['Disqualified',c(function(r){return r.status==='Disqualified'})],['Paid',c(function(r){return r.pay==='Paid'})],['Awaiting payment',c(function(r){return r.pay!=='Paid'&&r.status==='Completed'})],['Amount paid (USD)',sm(function(r){return r.pay==='Paid'})],['Amount unpaid (USD)',sm(function(r){return r.pay!=='Paid'&&r.status==='Completed'})],['To pay workers (USD)',work.reduce(function(n,r){return n+(r.by&&r.by!=='Me'&&!r.wpaid?(+r.wpay||0):0)},0)]].map(function(s){return '<div class="stat"><b>'+s[1]+'</b><span>'+s[0]+'</span></div>'}).join('');
  var ss=sched.slice().sort(byNo),tot=ss.reduce(function(n,s){return n+(+s.amount||0)},0);
  $('srows').innerHTML=ss.length?ss.map(function(s){return '<tr><td><b>'+s.no+'</b></td><td>'+esc(s.work)+'</td><td>'+esc(s.researcher)+'</td><td>'+esc(s.date)+'</td><td>'+esc(s.time)+'</td><td>'+(s.amount!==''?'$'+esc(s.amount):'-')+'</td><td><button class="del" data-sd="'+s.id+'" title="Delete">✕</button></td></tr>'}).join('')+'<tr><td colspan="5"><b>Total</b></td><td colspan="2"><b>$'+tot+'</b></td></tr>':'<tr><td colspan="7" class="empty">No schedules yet.</td></tr>';
- $('wrows').innerHTML=wk.length?wk.map(function(w){return '<tr><td>'+esc(w.name)+'</td><td><a href="tel:'+esc(w.phone)+'">'+esc(w.phone)+'</a></td><td>$'+work.reduce(function(n,r){return n+(r.by===w.name?(+r.wpay||0):0)},0)+'</td><td><button class="del" data-wd="'+w.id+'" title="Remove">✕</button></td></tr>'}).join(''):'<tr><td colspan="4" class="empty">No workers added yet.</td></tr>';
+ $('wrows').innerHTML=wk.length?wk.map(function(w){return '<tr><td>'+esc(w.name)+'</td><td><a href="tel:'+esc(w.phone)+'">'+esc(w.phone)+'</a></td><td>$'+wsum(w.name)+'</td><td>$'+wsum(w.name,true)+'</td><td>$'+wsum(w.name,false)+'</td><td><button class="del" data-wd="'+w.id+'" title="Remove">✕</button></td></tr>'}).join(''):'<tr><td colspan="6" class="empty">No workers added yet.</td></tr>';
  workerOpts();renderWD();
 }
 function renderWD(){
  $('wdet').innerHTML=wk.length?'<div class="card"><h2>Work given to each worker</h2>'+wk.map(function(w){
   var L=work.filter(function(r){return r.by===w.name}).sort(byNo);
   var tot=L.reduce(function(n,r){return n+(+r.wpay||0)},0);
-  return '<div class="tw" style="margin-bottom:12px"><div class="wh"><span>'+esc(w.name)+' &middot; '+esc(w.phone)+'</span><span>To receive: $'+tot+'</span></div>'+
-  (L.length?'<table style="min-width:480px"><thead><tr><th>No.</th><th>Date</th><th>Researcher</th><th>Research title</th><th>Amount to receive (USD)</th></tr></thead><tbody>'+L.map(function(r){return '<tr><td><b>'+r.no+'</b></td><td>'+esc(r.date)+'</td><td>'+esc(r.name)+'</td><td>'+esc(r.title||'-')+'</td><td>'+(r.wpay?'$'+esc(r.wpay):'-')+'</td></tr>'}).join('')+'</tbody></table>':'<div class="empty">No work given to this worker yet.</div>')+'</div>'}).join('')+'</div>':'';
+  return '<div class="tw" style="margin-bottom:12px"><div class="wh"><span>'+esc(w.name)+' &middot; '+esc(w.phone)+'</span><span>Total: $'+tot+' &middot; Balance: $'+wsum(w.name,false)+'</span>'+(window.claude?'':'<span class="nw"><button class="sm" data-cl="'+w.id+'">Copy link</button> <button class="sm" data-wa="'+w.id+'">WhatsApp</button></span>')+'</div>'+
+  (L.length?'<table style="min-width:480px"><thead><tr><th>No.</th><th>Date</th><th>Researcher</th><th>Research title</th><th>Amount to receive (USD)</th><th class="c">Paid</th><th class="c">Received</th></tr></thead><tbody>'+L.map(function(r){return '<tr><td><b>'+r.no+'</b></td><td>'+esc(r.date)+'</td><td>'+esc(r.name)+'</td><td>'+esc(r.title||'-')+'</td><td>'+(r.wpay?'$'+esc(r.wpay):'-')+'</td><td class="c"><label class="tick" style="justify-content:center;flex-direction:column;gap:2px"><input type="checkbox" data-wp="'+r.id+'"'+(r.wpaid?' checked':'')+'><span>'+(r.wpaid?'Paid':'Not paid')+'</span></label></td><td class="c">'+(r.wrecv?'<span class="badge completed">Received</span>':'<span style="color:var(--mut)">Not yet</span>')+'</td></tr>'}).join('')+'</tbody></table>':'<div class="empty">No work given to this worker yet.</div>')+'</div>'}).join('')+'</div>':'';
 }
 
 $('f').onsubmit=function(e){e.preventDefault();
- var o={name:$('name').value.trim(),title:$('rt').value.trim(),date:$('date').value,by:$('by').value,status:$('status').value,pay:$('pay').checked?'Paid':'Not paid',amount:$('amt').value,wpay:$('by').value==='Me'?'':$('wpay').value};
- if(editId){work=work.map(function(r){return r.id===editId?Object.assign({id:editId,no:r.no},o):r})}
+ var o={name:$('name').value.trim(),title:$('rt').value.trim(),email:$('re').value.trim(),date:$('date').value,by:$('by').value,status:$('status').value,pay:$('pay').checked?'Paid':'Not paid',amount:$('amt').value,wpay:$('by').value==='Me'?'':$('wpay').value};
+ if(editId){work=work.map(function(r){return r.id===editId?Object.assign({id:editId,no:r.no,wpaid:r.wpaid},o):r})}
  else{o.id=Date.now()+Math.random();o.no=nextNo(work);work.push(o)}
  put(K.w,work);resetForm();render()};
 function resetForm(){editId=null;$('f').reset();$('date').value=today();$('by').value='Me';togg();$('save').textContent='Add work';$('ft').textContent='Add new work';$('cancel').hidden=true}
@@ -174,13 +177,15 @@ $('rows').onchange=function(e){var id=e.target.getAttribute('data-t');if(id){wor
 $('rows').onclick=function(e){var t=e.target,id;
  if(id=t.getAttribute('data-d')){if(confirm('Delete this record?')){work=work.filter(function(r){return String(r.id)!==id});put(K.w,work);render()}}
  else if(id=t.getAttribute('data-e')){var r=work.filter(function(x){return String(x.id)===id})[0];editId=r.id;
-  $('name').value=r.name;$('rt').value=r.title||'';$('date').value=r.date;$('by').value=r.by||'Me';togg();$('wpay').value=r.wpay||'';$('amt').value=r.amount||'';$('status').value=r.status;$('pay').checked=r.pay==='Paid';
+  $('name').value=r.name;$('rt').value=r.title||'';$('re').value=r.email||'';$('date').value=r.date;$('by').value=r.by||'Me';togg();$('wpay').value=r.wpay||'';$('amt').value=r.amount||'';$('status').value=r.status;$('pay').checked=r.pay==='Paid';
   $('save').textContent='Update';$('ft').textContent='Edit work no. '+r.no;$('cancel').hidden=false;window.scrollTo(0,0)}};
 $('sf').onsubmit=function(e){e.preventDefault();sched.push({id:Date.now()+Math.random(),no:nextNo(sched),work:$('sw').value.trim(),researcher:$('sr').value.trim(),date:$('sd').value,time:$('st').value,amount:$('sa').value});put(K.s,sched);$('sf').reset();$('sd').value=today();render()};
 $('srows').onclick=function(e){var id=e.target.getAttribute('data-sd');if(id&&confirm('Delete this schedule?')){sched=sched.filter(function(s){return String(s.id)!==id});put(K.s,sched);render()}};
 $('wf').onsubmit=function(e){e.preventDefault();wk.push({id:Date.now()+Math.random(),name:$('wn').value.trim(),phone:$('wp').value.trim()});put(K.k,wk);$('wf').reset();render()};
 $('wrows').onclick=function(e){var id=e.target.getAttribute('data-wd');if(id&&confirm('Remove this worker?')){wk=wk.filter(function(w){return String(w.id)!==id});put(K.k,wk);render()}};
 
+function wsum(n,paid){return work.reduce(function(t,r){return t+(r.by===n&&(paid===undefined||!!r.wpaid===paid)?(+r.wpay||0):0)},0)}
+$('wdet').onchange=function(e){var id=e.target.getAttribute('data-wp');if(id){work=work.map(function(r){if(String(r.id)===id)r.wpaid=e.target.checked;return r});put(K.w,work);render()}};
 function say(t){$('msg').textContent=t;setTimeout(function(){$('msg').textContent=''},4000)}
 function blobSave(name,data){var a=document.createElement('a');a.href=URL.createObjectURL(new Blob([data]));a.download=name;document.body.appendChild(a);a.click();setTimeout(function(){a.remove()},500);say('Saved to your downloads.')}
 function dl(name,data){
@@ -194,7 +199,7 @@ $('bexp').onclick=function(){dl('work-tracker-backup-'+today()+'.json',JSON.stri
 $('bcsv').onclick=function(){
  var q=function(v){return '"'+String(v==null?'':v).replace(/"/g,'""')+'"'};
  var rows=work.slice().sort(byNo);
- var out=['No,Researcher,Research title,Date,Done by,Amount (USD),Worker pay (USD),Status,Payment'].concat(rows.map(function(r){return [r.no,r.name,r.title,r.date,r.by||'Me',r.amount,r.wpay,r.status,r.pay].map(q).join(',')}));
+ var out=['No,Researcher,Research title,Research email,Date,Done by,Amount (USD),Worker pay (USD),Status,Payment'].concat(rows.map(function(r){return [r.no,r.name,r.title,r.email,r.date,r.by||'Me',r.amount,r.wpay,r.status,r.pay].map(q).join(',')}));
  dl('work-log-'+today()+'.csv','\ufeff'+out.join('\r\n'));
 };
 $('bimp').onchange=function(){
@@ -205,9 +210,41 @@ $('bimp').onchange=function(){
   put(K.w,work);put(K.s,sched);put(K.k,wk);render();say('Backup restored.')}catch(e){say('That file is not a valid backup.')}};
  rd.readAsText(f);this.value='';
 };
+var WM=location.hash.indexOf('#w=')===0;
+function enc(o){return btoa(unescape(encodeURIComponent(JSON.stringify(o)))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'')}
+function dec(t){t=t.replace(/-/g,'+').replace(/_/g,'/');while(t.length%4)t+='=';return JSON.parse(decodeURIComponent(escape(atob(t))))}
+function copyText(t,m){if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(t).then(function(){say(m)}).catch(function(){prompt('Copy this:',t)})}else{prompt('Copy this:',t)}}
+function shareLink(name){var items=work.filter(function(r){return r.by===name}).sort(byNo).map(function(r){return {i:r.id,n:r.no,d:r.date,t:r.title||'',a:r.wpay||'',p:r.wpaid?1:0}});return location.href.split('#')[0]+'#w='+enc({w:name,g:today(),x:items})}
+$('wdet').onclick=function(e){var t=e.target,id=t.getAttribute('data-cl')||t.getAttribute('data-wa');if(!id)return;
+ var w=wk.filter(function(x){return String(x.id)===id})[0];if(!w)return;var link=shareLink(w.name);
+ if(t.getAttribute('data-wa'))window.open('https://wa.me/?text='+encodeURIComponent('Hello '+w.name+', here is your work list: '+link),'_blank');
+ else copyText(link,'Link copied. Send it to '+w.name+'.')};
+$('cf').onsubmit=function(e){e.preventDefault();var tok=$('cc').value.trim().split(/\s+/).pop();
+ try{var o=dec(tok),n=0;if(!o.w||!Array.isArray(o.r))throw 0;
+  work=work.map(function(r){if(r.by===o.w&&o.r.map(String).indexOf(String(r.id))>-1&&!r.wrecv){r.wrecv=true;n++}return r});
+  put(K.w,work);$('cf').reset();render();alert(n?n+' job(s) marked as received by '+o.w+'.':'No new jobs to update for '+o.w+'.')}
+ catch(x){alert('That code is not valid. Paste the full message the worker sent.')}};
+function startWorker(){
+ var d;try{d=dec(location.hash.slice(3))}catch(x){document.body.innerHTML='<p style="padding:20px">This link is not valid. Ask for a new one.</p>';return}
+ $('ow').classList.add('hid');var m=$('wm');m.classList.remove('hid');
+ var key='wt-recv-'+d.w,rc=load(key);
+ function draw(){var tot=0,paid=0,got=0;
+  var rows=d.x.map(function(r){var a=+r.a||0,rv=rc.indexOf(String(r.i))>-1;tot+=a;if(r.p)paid+=a;if(rv)got+=a;
+   return '<tr><td><b>'+r.n+'</b></td><td>'+esc(r.d)+'</td><td>'+esc(r.t||'-')+'</td><td>'+(a?'$'+a:'-')+'</td><td>'+(r.p?'<span class="badge completed">Paid</span>':'<span class="badge disqualified">Not paid</span>')+'</td><td class="c"><label class="tick" style="justify-content:center"><input type="checkbox" data-r="'+esc(r.i)+'"'+(rv?' checked':'')+'> Received</label></td></tr>'}).join('');
+  m.innerHTML='<div class="top"><div><h1>Hello '+esc(d.w)+'<small>Your work list &middot; as of '+esc(d.g)+'</small></h1></div></div>'+
+  '<div class="stats"><div class="stat"><b>$'+tot+'</b><span>Total amount (USD)</span></div><div class="stat"><b>$'+paid+'</b><span>Marked paid by owner</span></div><div class="stat"><b>$'+got+'</b><span>Ticked as received</span></div></div>'+
+  '<div class="card"><h2>Work you did</h2><div class="tw"><table style="min-width:520px"><thead><tr><th>No.</th><th>Date</th><th>Study</th><th>Amount (USD)</th><th>Payment</th><th class="c">Received</th></tr></thead><tbody>'+(rows||'<tr><td colspan="6" class="empty">No work in this list.</td></tr>')+'</tbody></table></div>'+
+  '<div class="formbar"><button class="p" id="wsend">Send confirmation to owner</button><button class="g" id="wcopy">Copy code</button><span id="wmsg" style="font-size:.85rem;color:var(--mut)"></span></div></div>'}
+ m.onchange=function(e){var id=e.target.getAttribute('data-r');if(!id)return;rc=rc.filter(function(x){return x!==id});if(e.target.checked)rc.push(id);put(key,rc);draw()};
+ m.onclick=function(e){var id=e.target.id;if(id!=='wsend'&&id!=='wcopy')return;
+  var txt='Work confirmation from '+d.w+'. Code: '+enc({w:d.w,r:rc});
+  if(id==='wsend')window.open('https://wa.me/?text='+encodeURIComponent(txt),'_blank');
+  else if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(txt).then(function(){$('wmsg').textContent='Copied. Send it to the owner.'}).catch(function(){prompt('Copy this:',txt)});else prompt('Copy this:',txt)};
+ draw()}
 $('by').onchange=togg;
 ['q','fs','fp'].forEach(function(i){$(i).oninput=render});
 render();
+if(WM)startWorker();
 if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('sw.js').catch(function(){})})}
 </script>
 </body>
