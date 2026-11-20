@@ -72,8 +72,9 @@ a{color:var(--acd)}
   <h2 id="ft">Add new work</h2>
   <div class="grid">
    <label class="f">Researcher name<input id="name" required></label>
-   <label class="f">Research title<input id="rt" placeholder="Title of the research"></label>
-   <label class="f">Research email<input id="re" type="email" placeholder="researcher@email.com"></label>
+   <label class="f">Work<input id="wj" placeholder="e.g. Survey data entry"></label>
+   <label class="f">Work title<input id="rt" placeholder="Title of the work"></label>
+   <label class="f">Work email<input id="re" type="email" placeholder="name@email.com"></label>
    <label class="f">Date<input id="date" type="date" required></label>
    <label class="f">Done by<select id="by"></select></label>
    <label class="f">Amount (USD)<input id="amt" type="number" min="0" step="any" placeholder="0"></label>
@@ -85,8 +86,8 @@ a{color:var(--acd)}
  </form>
  <div class="card">
   <h2>Work records</h2>
-  <div class="filters"><input id="q" placeholder="Search researcher or title..."><select id="fs"><option value="">All status</option><option>Completed</option><option>Disqualified</option></select><select id="fp"><option value="">All payments</option><option>Paid</option><option>Not paid</option></select></div>
-  <div class="tw"><table><thead><tr><th>No.</th><th>Researcher</th><th>Research title</th><th>Research email</th><th>Date</th><th>Done by</th><th>Amount (USD)</th><th>Worker pay (USD)</th><th>Status</th><th class="c">Paid</th><th></th></tr></thead><tbody id="rows"></tbody></table></div>
+  <div class="filters"><input id="q" placeholder="Search researcher, work or title..."><select id="fs"><option value="">All status</option><option>Completed</option><option>Disqualified</option></select><select id="fp"><option value="">All payments</option><option>Paid</option><option>Not paid</option></select></div>
+  <div class="tw"><table><thead><tr><th>No.</th><th>Researcher</th><th>Work</th><th>Work title</th><th>Work email</th><th>Date</th><th>Done by</th><th>Amount (USD)</th><th>Worker pay (USD)</th><th>Status</th><th class="c">Paid</th><th></th></tr></thead><tbody id="rows"></tbody></table></div>
  </div>
 </div>
 
@@ -149,8 +150,8 @@ function workerOpts(){var cur=$('by').value;$('by').innerHTML='<option value="Me
 function render(){
  if(fixNo(work,true))put(K.w,work);if(fixNo(sched,false))put(K.s,sched);
  var q=$('q').value.toLowerCase(),fs=$('fs').value,fp=$('fp').value;
- var list=work.filter(function(r){return (r.name.toLowerCase().indexOf(q)>-1||String(r.title||'').toLowerCase().indexOf(q)>-1)&&(!fs||r.status===fs)&&(!fp||r.pay===fp)}).sort(byNo);
- $('rows').innerHTML=list.length?list.map(function(r){var w=r.by&&r.by!=='Me';return '<tr><td><b>'+r.no+'</b></td><td>'+esc(r.name)+'</td><td>'+esc(r.title||'-')+'</td><td>'+(r.email?'<a href="mailto:'+esc(r.email)+'">'+esc(r.email)+'</a>':'-')+'</td><td>'+esc(r.date)+'</td><td>'+esc(r.by||'Me')+'</td><td>'+(r.amount?'$'+esc(r.amount):'-')+'</td><td>'+(w&&r.wpay?'$'+esc(r.wpay):'-')+'</td><td><span class="badge '+r.status.toLowerCase()+'">'+r.status+'</span></td><td class="c"><label class="tick" style="justify-content:center;flex-direction:column;gap:2px"><input type="checkbox" data-t="'+r.id+'"'+(r.pay==='Paid'?' checked':'')+'><span>'+(r.pay==='Paid'?'Paid':'Not paid')+'</span></label></td><td class="nw"><button class="sm" data-e="'+r.id+'">Edit</button> <button class="del" data-d="'+r.id+'" title="Delete">✕</button></td></tr>'}).join(''):'<tr><td colspan="11" class="empty">No work recorded yet.</td></tr>';
+ var list=work.filter(function(r){return (r.name.toLowerCase().indexOf(q)>-1||(String(r.title||'')+' '+String(r.job||'')).toLowerCase().indexOf(q)>-1)&&(!fs||r.status===fs)&&(!fp||r.pay===fp)}).sort(byNo);
+ $('rows').innerHTML=list.length?list.map(function(r){var w=r.by&&r.by!=='Me';return '<tr><td><b>'+r.no+'</b></td><td>'+esc(r.name)+'</td><td>'+esc(r.job||'-')+'</td><td>'+esc(r.title||'-')+'</td><td>'+(r.email?'<a href="mailto:'+esc(r.email)+'">'+esc(r.email)+'</a>':'-')+'</td><td>'+esc(r.date)+'</td><td>'+esc(r.by||'Me')+'</td><td>'+(r.amount?'$'+esc(r.amount):'-')+'</td><td>'+(w&&r.wpay?'$'+esc(r.wpay):'-')+'</td><td><span class="badge '+r.status.toLowerCase()+'">'+r.status+'</span></td><td class="c"><label class="tick" style="justify-content:center;flex-direction:column;gap:2px"><input type="checkbox" data-t="'+r.id+'"'+(r.pay==='Paid'?' checked':'')+'><span>'+(r.pay==='Paid'?'Paid':'Not paid')+'</span></label></td><td class="nw"><button class="sm" data-e="'+r.id+'">Edit</button> <button class="del" data-d="'+r.id+'" title="Delete">✕</button></td></tr>'}).join(''):'<tr><td colspan="12" class="empty">No work recorded yet.</td></tr>';
  var c=function(f){return work.filter(f).length};
  var sm=function(f){return work.filter(f).reduce(function(n,r){return n+(+r.amount||0)},0)};
  $('stats').innerHTML=[['Total records',work.length],['Completed',c(function(r){return r.status==='Completed'})],['Disqualified',c(function(r){return r.status==='Disqualified'})],['Paid',c(function(r){return r.pay==='Paid'})],['Awaiting payment',c(function(r){return r.pay!=='Paid'&&r.status==='Completed'})],['Amount paid (USD)',sm(function(r){return r.pay==='Paid'})],['Amount unpaid (USD)',sm(function(r){return r.pay!=='Paid'&&r.status==='Completed'})],['To pay workers (USD)',work.reduce(function(n,r){return n+(r.by&&r.by!=='Me'&&!r.wpaid?(+r.wpay||0):0)},0)]].map(function(s){return '<div class="stat"><b>'+s[1]+'</b><span>'+s[0]+'</span></div>'}).join('');
@@ -164,11 +165,11 @@ function renderWD(){
   var L=work.filter(function(r){return r.by===w.name}).sort(byNo);
   var tot=L.reduce(function(n,r){return n+(+r.wpay||0)},0);
   return '<div class="tw" style="margin-bottom:12px"><div class="wh"><span>'+esc(w.name)+' &middot; '+esc(w.phone)+'</span><span>Total: $'+tot+' &middot; Balance: $'+wsum(w.name,false)+'</span>'+(window.claude?'':'<span class="nw"><button class="sm" data-cl="'+w.id+'">Copy link</button> <button class="sm" data-wa="'+w.id+'">WhatsApp</button></span>')+'</div>'+
-  (L.length?'<table style="min-width:480px"><thead><tr><th>No.</th><th>Date</th><th>Researcher</th><th>Research title</th><th>Amount to receive (USD)</th><th class="c">Paid</th><th class="c">Received</th></tr></thead><tbody>'+L.map(function(r){return '<tr><td><b>'+r.no+'</b></td><td>'+esc(r.date)+'</td><td>'+esc(r.name)+'</td><td>'+esc(r.title||'-')+'</td><td>'+(r.wpay?'$'+esc(r.wpay):'-')+'</td><td class="c"><label class="tick" style="justify-content:center;flex-direction:column;gap:2px"><input type="checkbox" data-wp="'+r.id+'"'+(r.wpaid?' checked':'')+'><span>'+(r.wpaid?'Paid':'Not paid')+'</span></label></td><td class="c">'+(r.wrecv?'<span class="badge completed">Received</span>':'<span style="color:var(--mut)">Not yet</span>')+'</td></tr>'}).join('')+'</tbody></table>':'<div class="empty">No work given to this worker yet.</div>')+'</div>'}).join('')+'</div>':'';
+  (L.length?'<table style="min-width:480px"><thead><tr><th>No.</th><th>Date</th><th>Researcher</th><th>Work</th><th>Work title</th><th>Amount to receive (USD)</th><th class="c">Paid</th><th class="c">Received</th></tr></thead><tbody>'+L.map(function(r){return '<tr><td><b>'+r.no+'</b></td><td>'+esc(r.date)+'</td><td>'+esc(r.name)+'</td><td>'+esc(r.job||'-')+'</td><td>'+esc(r.title||'-')+'</td><td>'+(r.wpay?'$'+esc(r.wpay):'-')+'</td><td class="c"><label class="tick" style="justify-content:center;flex-direction:column;gap:2px"><input type="checkbox" data-wp="'+r.id+'"'+(r.wpaid?' checked':'')+'><span>'+(r.wpaid?'Paid':'Not paid')+'</span></label></td><td class="c">'+(r.wrecv?'<span class="badge completed">Received</span>':'<span style="color:var(--mut)">Not yet</span>')+'</td></tr>'}).join('')+'</tbody></table>':'<div class="empty">No work given to this worker yet.</div>')+'</div>'}).join('')+'</div>':'';
 }
 
 $('f').onsubmit=function(e){e.preventDefault();
- var o={name:$('name').value.trim(),title:$('rt').value.trim(),email:$('re').value.trim(),date:$('date').value,by:$('by').value,status:$('status').value,pay:$('pay').checked?'Paid':'Not paid',amount:$('amt').value,wpay:$('by').value==='Me'?'':$('wpay').value};
+ var o={name:$('name').value.trim(),job:$('wj').value.trim(),title:$('rt').value.trim(),email:$('re').value.trim(),date:$('date').value,by:$('by').value,status:$('status').value,pay:$('pay').checked?'Paid':'Not paid',amount:$('amt').value,wpay:$('by').value==='Me'?'':$('wpay').value};
  if(editId){work=work.map(function(r){return r.id===editId?Object.assign({id:editId,no:r.no,wpaid:r.wpaid},o):r})}
  else{o.id=Date.now()+Math.random();o.no=nextNo(work);work.push(o)}
  put(K.w,work);resetForm();render()};
@@ -178,7 +179,7 @@ $('rows').onchange=function(e){var id=e.target.getAttribute('data-t');if(id){wor
 $('rows').onclick=function(e){var t=e.target,id;
  if(id=t.getAttribute('data-d')){if(confirm('Delete this record?')){work=work.filter(function(r){return String(r.id)!==id});put(K.w,work);render()}}
  else if(id=t.getAttribute('data-e')){var r=work.filter(function(x){return String(x.id)===id})[0];editId=r.id;
-  $('name').value=r.name;$('rt').value=r.title||'';$('re').value=r.email||'';$('date').value=r.date;$('by').value=r.by||'Me';togg();$('wpay').value=r.wpay||'';$('amt').value=r.amount||'';$('status').value=r.status;$('pay').checked=r.pay==='Paid';
+  $('name').value=r.name;$('wj').value=r.job||'';$('rt').value=r.title||'';$('re').value=r.email||'';$('date').value=r.date;$('by').value=r.by||'Me';togg();$('wpay').value=r.wpay||'';$('amt').value=r.amount||'';$('status').value=r.status;$('pay').checked=r.pay==='Paid';
   $('save').textContent='Update';$('ft').textContent='Edit work no. '+r.no;$('cancel').hidden=false;window.scrollTo(0,0)}};
 $('sf').onsubmit=function(e){e.preventDefault();sched.push({id:Date.now()+Math.random(),no:nextNo(sched),work:$('sw').value.trim(),researcher:$('sr').value.trim(),date:$('sd').value,time:$('st').value,amount:$('sa').value});put(K.s,sched);$('sf').reset();$('sd').value=today();render()};
 $('srows').onclick=function(e){var id=e.target.getAttribute('data-sd');if(id&&confirm('Delete this schedule?')){sched=sched.filter(function(s){return String(s.id)!==id});put(K.s,sched);render()}};
@@ -200,7 +201,7 @@ $('bexp').onclick=function(){dl('work-tracker-backup-'+today()+'.json',JSON.stri
 $('bcsv').onclick=function(){
  var q=function(v){return '"'+String(v==null?'':v).replace(/"/g,'""')+'"'};
  var rows=work.slice().sort(byNo);
- var out=['No,Researcher,Research title,Research email,Date,Done by,Amount (USD),Worker pay (USD),Status,Payment'].concat(rows.map(function(r){return [r.no,r.name,r.title,r.email,r.date,r.by||'Me',r.amount,r.wpay,r.status,r.pay].map(q).join(',')}));
+ var out=['No,Researcher,Work,Work title,Work email,Date,Done by,Amount (USD),Worker pay (USD),Status,Payment'].concat(rows.map(function(r){return [r.no,r.name,r.job,r.title,r.email,r.date,r.by||'Me',r.amount,r.wpay,r.status,r.pay].map(q).join(',')}));
  dl('work-log-'+today()+'.csv','\ufeff'+out.join('\r\n'));
 };
 $('bimp').onchange=function(){
